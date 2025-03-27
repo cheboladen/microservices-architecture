@@ -87,10 +87,53 @@ Para definir esta configuración, se partió de las siguientes asunciones:
 
 ## Cómo Usar
 
-1.  **Prerrequisitos:** Terraform CLI (`>= 1.11.0`), `gcloud` SDK autenticado, proyecto GCP con facturación, bucket GCS para estado remoto.
-2.  **Configuración:** Clonar repo. Editar `backend.tf` con tu bucket GCS. Crear `terraform.tfvars` (mínimo `gcp_project_id`).
-3.  **Despliegue:** `terraform init`, `terraform plan -out=tfplan`, revisar, `terraform apply tfplan`.
-4.  **Limpieza:** `terraform destroy`.
+Esta sección describe cómo desplegar la infraestructura definida en este repositorio utilizando Terraform. Tienes dos opciones principales para gestionar el archivo de estado de Terraform (`terraform.tfstate`), que es crucial porque registra qué infraestructura ha creado Terraform:
+
+**Opción 1: Usando Backend Remoto GCS (Recomendado para colaboración y seguridad)**
+
+Este es el método **recomendado**, especialmente si trabajas en equipo o quieres una gestión más robusta del estado. Almacena el archivo de estado de forma centralizada y segura en un bucket de Google Cloud Storage y proporciona bloqueo para evitar que varias personas apliquen cambios simultáneamente.
+
+1.  **Prerrequisitos:**
+    *   Instalar Terraform CLI (versión `>= 1.11.0`).
+    *   Instalar Google Cloud SDK (`gcloud`) y autenticarse (`gcloud auth login`, `gcloud auth application-default login`).
+    *   Tener un proyecto GCP con facturación habilitada.
+    *   **¡Importante!** Crear manualmente un bucket de Google Cloud Storage en tu proyecto GCP. Este bucket almacenará el archivo de estado remoto. Asegúrate de que tenga activado el control de versiones de objetos para poder recuperar estados anteriores si fuera necesario. Anota el nombre exacto del bucket.
+        *   Ejemplo comando gcloud: `gcloud storage buckets create gs://NOMBRE_BUCKET_UNICO --project=TU_PROYECTO_ID --location=TU_REGION --uniform-bucket-level-access --enable-versioning` (Asegúrate de que el nombre del bucket sea globalmente único).
+2.  **Configuración:**
+    *   Clonar este repositorio.
+    *   **Importante:** Editar el archivo `backend.tf`. Reemplaza `"tu-bucket-terraform-state-unico"` con el nombre real del bucket GCS que acabas de crear.
+    *   Crear un archivo `terraform.tfvars` (basado en `terraform.tfvars.example`) y definir al menos el valor para `gcp_project_id`. Puedes sobrescribir otras variables si es necesario.
+3.  **Despliegue:**
+    *   Abrir una terminal en el directorio raíz del repositorio.
+    *   Ejecutar `terraform init`. Terraform detectará la configuración del backend GCS, te pedirá confirmación si ya existe estado, y descargará los providers.
+    *   Ejecutar `terraform plan -out=tfplan` para previsualizar los cambios.
+    *   Revisar el plan (`tfplan`).
+    *   Ejecutar `terraform apply tfplan` para crear la infraestructura. Confirmar con `yes`. El archivo de estado se guardará en el bucket GCS.
+4.  **Limpieza:**
+    *   Para destruir la infraestructura creada, ejecutar `terraform destroy`. Confirmar con `yes`. El estado en GCS se actualizará.
+
+**Opción 2: Usando Backend Local (Para pruebas individuales y rápidas)**
+
+Esta opción es más simple para empezar si estás trabajando solo y no necesitas las características de colaboración o seguridad avanzada del estado remoto. Terraform guardará el archivo `terraform.tfstate` directamente en el directorio local donde ejecutes los comandos. **¡Ten cuidado de no borrar este archivo accidentalmente ni subirlo a un control de versiones público si contiene información sensible!**
+
+1.  **Prerrequisitos:**
+    *   Instalar Terraform CLI (versión `>= 1.11.0`).
+    *   Instalar Google Cloud SDK (`gcloud`) y autenticarse (`gcloud auth login`, `gcloud auth application-default login`).
+    *   Tener un proyecto GCP con facturación habilitada.
+2.  **Configuración:**
+    *   Clonar este repositorio.
+    *   **Importante:** **Eliminar o comentar completamente el contenido del archivo `backend.tf`**. Esto hará que Terraform utilice su backend local por defecto. Puedes renombrarlo, por ejemplo, a `backend.tf.disabled`.
+    *   Crear un archivo `terraform.tfvars` (basado en `terraform.tfvars.example`) y definir al menos el valor para `gcp_project_id`. Puedes sobrescribir otras variables si es necesario.
+3.  **Despliegue:**
+    *   Abrir una terminal en el directorio raíz del repositorio.
+    *   Ejecutar `terraform init`. Terraform se inicializará usando el backend local y descargará los providers.
+    *   Ejecutar `terraform plan -out=tfplan` para previsualizar los cambios.
+    *   Revisar el plan (`tfplan`).
+    *   Ejecutar `terraform apply tfplan` para crear la infraestructura. Confirmar con `yes`. El archivo `terraform.tfstate` (y backups) se crearán en tu directorio local.
+4.  **Limpieza:**
+    *   Para destruir la infraestructura creada, ejecutar `terraform destroy`. Confirmar con `yes`. Terraform usará el archivo de estado local para saber qué destruir.
+
+**¿Cuál elegir?** Para este ejercicio de entrevista, si solo necesitas demostrar la funcionalidad y vas a ejecutarlo tú mismo, la **Opción 2 (Local)** puede ser suficiente y más rápida de configurar. Para cualquier escenario que implique colaboración, persistencia segura del estado o flujos de trabajo más allá de una prueba simple, la **Opción 1 (GCS)** es la práctica estándar y recomendada. Este repositorio está configurado por defecto para la Opción 1.
 
 ## Posibles Mejoras Futuras
 
