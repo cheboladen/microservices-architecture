@@ -1,0 +1,7 @@
+# Requerido: El ID de tu proyecto GCP
+# gcp_project_id = "tu-proyecto-gcp-id"
+
+# Opcional: Puedes sobrescribir aquí cualquier variable definida en variables.tf
+# Ejemplo:
+# gcp_region = "europe-west1"
+# master_authorized_network_cidr = "TU_IP_PUBLICA/32"
